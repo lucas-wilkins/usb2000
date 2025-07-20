@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
+</head>
+
+<body>
+
+    <div id="plot" style="width: 100%; height: 100%;"></div>
+
+
+    <div id="controls" style="text-align: center;">
+        <button onclick="setDark()"> Set Dark Reference </button>
+        <button onclick="setLight()"> Set Light Reference </button>
+        <button id="clearLightButton" onclick="clearLight()"> Clear Light Reference </button>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <label for="integrationTime">Integration Time (us):</label>
+        <input type="number" id="integrationTime" value="1000" />
+        <button onclick="updateSettings()">Set</button>
+        <div id="status"></div>
+
+    </div>
+
+    <div id="saving" style="text-align: center;">
+        <button onclick="save()">Save</button>
+        <label for="filename">Filename</label>
+        <input type="text" id="filename" value="spectrum.csv"/>
+        <label for="overwrite">Overwrite</label>
+        <input type="checkbox" id="overwrite" value=true />
+        <div id="save-status"></div>
+    </div>
+
+    <script>
+        document.getElementById("clearLightButton").disabled = true;
+
+        async function fetchData() {
+           const res = await fetch('/data');
+           if (res.ok) {
+              const data = await res.json();
+              const x = data.map(p => p.x);
+              const y = data.map(p => p.y);
+              Plotly.newPlot('plot', [{ x, y, mode: 'lines', name: 'spectrum' }]);
+
+           } else {
+                document.getElementById("status").innerText = "Error: " + errorText;
+           }
+        }
+
+
+        async function updateSettings() {
+            const value = parseInt(document.getElementById('integrationTime').value);
+            const res = await fetch('/integrationtime', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ value })
+            });
+
+            const msg = await res.text();
+            console.log("Server response: " + msg);
+          }
+
+        async function save() {
+            const filename = document.getElementById('filename').value
+            const overwrite = document.getElementById('overwrite').checked
+
+            const res = await fetch('/save', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ filename, overwrite })
+            });
+
+            const msg = await res.text();
+            document.getElementById("save-status").innerText = msg
+
+        }
+
+        async function setLight() {
+
+            try {
+
+                const res = await fetch('/light', {method: 'POST'});
+
+                if (res.ok) {
+                  document.getElementById("clearLightButton").disabled = false;
+                } else {
+                  const errorText = await response.text();
+                  document.getElementById("status") = "Error: " + errorText;
+                }
+
+            } catch (err) {
+              document.getElementById("status").textContent = "Network error";
+            }
+        }
+
+        async function clearLight() {
+            try {
+
+                const res = await fetch('/clearlight', {method: 'POST'});
+
+                if (res.ok) {
+                  document.getElementById("clearLightButton").disabled = true;
+                } else {
+                  const errorText = await response.text();
+                  document.getElementById("status") = "Error: " + errorText;
+                }
+
+            } catch (err) {
+              document.getElementById("status").textContent = "Network error";
+            }
+        }
+
+
+        async function setDark() {
+                const res = await fetch('/dark', {
+                method: 'POST'});
+
+            const msg = await res.text();
+            console.log("Server response: " + msg);
+
+        }
+
+        setInterval(fetchData, 250);
+        fetchData();
+    </script>
+
+    </body>
+</html>
