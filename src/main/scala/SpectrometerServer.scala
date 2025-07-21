@@ -78,7 +78,11 @@ object SpectrometerServer extends IOApp {
 
   // Get the current spectrum
   def currentSpectrumData: Array[(Double, Double)] = {
-    measurement.wavelengths zip measurement.relative
+
+    measurement.wavelengths zip measurement.relative.map {
+      case x if x.isNaN || x.isInfinity => 0.0
+      case x => x
+    }
   }
 
   /*
@@ -174,6 +178,7 @@ object SpectrometerServer extends IOApp {
     }
   }
 
+  // Save requests
   private val saveRoute = HttpRoutes.of[IO] {
     case req @ POST -> Root / "save" => req.as[String].flatMap { rawJson =>
       decode[SaveRequest](rawJson)(saveRequestDecoder) match {

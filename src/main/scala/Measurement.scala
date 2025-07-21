@@ -54,9 +54,7 @@ class Measurement(val wavelengths: Array[Double]) {
    *
    * @return Dark corrected rate spectrum
    */
-  def darkCorrected: Array[Double] = {
-    darkCorrect(rawRecording, darkRecording)
-  }
+  def darkCorrected: Array[Double] = darkCorrect(rawRecording, darkRecording)
 
   /**
    *
@@ -65,9 +63,7 @@ class Measurement(val wavelengths: Array[Double]) {
    * @return Light and dark corrected rate spectrum
    */
 
-  def relative: Array[Double] = {
-    normalise(darkCorrected, darkCorrectedLight)
-  }
+  def relative: Array[Double] = normalise(darkCorrected, darkCorrectedLight)
 
   def data: Recording = rawRecording
 
