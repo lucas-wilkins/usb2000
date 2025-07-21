@@ -234,7 +234,7 @@ object SpectrometerServer extends IOApp {
       .useForever
 
     // Get new data every 500 ms
-    val tick = IO.sleep(100.millis) >> IO(updateCurrentSpectrum())
+    val tick = IO.sleep(100.millis) >> IO.blocking(updateCurrentSpectrum())
     lazy val tickLoop: IO[Unit] = (tick >> tickLoop).handleErrorWith(_ => IO.unit)
 
     // Run data generation in the background
