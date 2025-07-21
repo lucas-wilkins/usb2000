@@ -34,15 +34,24 @@
     <script>
         document.getElementById("clearLightButton").disabled = true;
 
+        var plotted = false;
+
         async function fetchData() {
            const res = await fetch('/data');
            if (res.ok) {
               const data = await res.json();
               const x = data.map(p => p.x);
               const y = data.map(p => p.y);
-              Plotly.newPlot('plot', [{ x, y, mode: 'lines', name: 'spectrum' }]);
+
+              if (plotted) {
+                Plotly.update('plot', {x: [x], y: [y]});
+              } else {
+                Plotly.newPlot('plot', [{ x, y, mode: 'lines', name: 'spectrum' }]);
+                plotted = true;
+              }
 
            } else {
+                const errorText = await res.text();
                 document.getElementById("status").innerText = "Error: " + errorText;
            }
         }
