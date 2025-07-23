@@ -31,6 +31,21 @@
         <div id="save-status"></div>
     </div>
 
+    <div id="range" style="text-align: center;">
+
+        <label for="lowerRange">Restrict Wavelengths: From </label>
+        <input type="number" id="lowerRange" value="400" />
+
+        <label for="lowerRange">To</label>
+        <input type="number" id="upperRange" value="750" />
+
+        <label for="useRange">Use</label>
+        <input type="checkbox" id="useRange" value=false onclick="updateRange()"/>
+
+        <button onclick="updateRange()">Set</button>
+
+    </div>
+
     <script>
         document.getElementById("clearLightButton").disabled = true;
 
@@ -63,6 +78,20 @@
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify({ value })
+            });
+
+            const msg = await res.text();
+            console.log("Server response: " + msg);
+          }
+
+        async function updateRange() {
+            const lower = parseFloat(document.getElementById('lowerRange').value);
+            const upper = parseFloat(document.getElementById('upperRange').value);
+            const use = document.getElementById('useRange').checked
+            const res = await fetch('/range', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ lower, upper, use })
             });
 
             const msg = await res.text();

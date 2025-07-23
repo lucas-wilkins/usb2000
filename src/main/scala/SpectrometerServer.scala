@@ -129,10 +129,24 @@ object SpectrometerServer extends IOApp {
   case class SaveRequest(filename: String, overwrite: Boolean)
   val saveRequestDecoder: Decoder[SaveRequest] = Decoder.forProduct2("filename", "overwrite")(SaveRequest.apply)
 
+  case class RangeSettings(lower: Double, upper: Double, use: Boolean) {
+    def restrict(pairs: Array[(Double, Double)] ): Array[(Double, Double)] = if (use) {
+      pairs.filter {
+        case (wavelength, value) => (wavelength >= lower) && (wavelength <= upper)
+      }
+    } else {
+      pairs
+    }
+  }
+  val rangeSettingsDecoder: Decoder[RangeSettings] = Decoder.forProduct3("lower", "upper", "use")(RangeSettings.apply)
+
+  var rangeSettings: RangeSettings = RangeSettings(0, 10000, use=false)
+
   // Respond to requests for /data with the latest data as json
   private val dataRoute = HttpRoutes.of[IO] {
     case GET -> Root / "data" =>
-      val json = currentSpectrumData
+      val json = rangeSettings
+                  .restrict(currentSpectrumData)
                   .map { case (x, y) => s"""{"x":$x,"y":$y}""" }
                   .mkString("[", ",", "]")
 
@@ -199,6 +213,25 @@ object SpectrometerServer extends IOApp {
     }
   }
 
+  private val rangeRoute = HttpRoutes.of[IO] {
+    case req @ POST -> Root / "range" => {
+      req.as[String].flatMap { rawJson =>
+        decode[RangeSettings](rawJson)(rangeSettingsDecoder) match {
+          case Right(settings) =>
+
+            rangeSettings = settings
+
+            Ok(s"Set range settings ${settings}")
+
+
+          case Left(err) =>
+            logger.error(s"Got bad JSON: ${rawJson}")
+            BadRequest(s"Invalid JSON: ${err.getMessage}")
+        }
+      }
+    }
+  }
+
   // Respond to requests to set the white reference
   private val lightRoute = HttpRoutes.of[IO] {
     case POST -> Root / "light" =>
@@ -223,6 +256,7 @@ object SpectrometerServer extends IOApp {
   private val routes = (dataRoute
                           <+> indexRoute
                           <+> integrationTimeRoute
+                          <+> rangeRoute
                           <+> saveRoute
                           <+> lightRoute
                           <+> clearLightRoute
